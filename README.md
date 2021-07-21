@@ -1,8 +1,8 @@
 
-# SmartMet-server for Harvester Seasons service
+# SmartMet-server for FireDanger.eu service
 
-Mainly for showing ERA5 Land grib datasets and HOPS hydrological forecasts from seasonal and weather forecast data.
-This entails a mix of GRID and non-grid smartmet-server plugins to run. It is now being run on a WEkEO cloud server running Ubuntu.
+FireDanger information from seasonal and weather forecast data to inform Europe on risks for wildfire in their region.
+This entails a GRID smartmet-server/plugins to run. It is now being tested on a EuropeanWeather cloud server running Ubuntu.
 ... let's see how it works:
 
 First prepare a data directory at the same level as this cloned directory (../data) and `ln -s smartmet-server/config ../config`
