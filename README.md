@@ -3,6 +3,7 @@
 
 FireDanger information from seasonal and weather forecast data to inform Europe on risks for wildfire in their region.
 This entails a GRID smartmet-server/plugins to run. It is now being tested on a EuropeanWeather cloud server running Ubuntu.
+The goal is to develop lua functions for many fireweather indices, so that they can be calculated on-demand from original weather, seasonal and reanalysis data.
 ... let's see how it works:
 
 First prepare a data directory at the same level as this cloned directory (../data) and `ln -s smartmet-server/config ../config`
@@ -14,27 +15,27 @@ docker-compose up --detatch
 This will quickly add all components, but below are steps for all of the three Docker containers needed.
 
 # Transfer files from C3S CDS with shell scripts
-You will need grib_set and cdo, so install something like libeccodes-tools and cdo packages on Ubuntu and equivalents on other OSs.
-under bin you have the get-seasonal.sh for now. Similar scripts for ERA5 and ERA5L will be added soon.
+You will need grib_set and cdo, so install something like libeccodes-tools and cdo packages on Ubuntu and equivalents on other OSs. A good option is to install ana/miniconda and install these tools with it in a dedicated conda environment. The scripts are referring to an xr environment as python xarray functionality is planned in addition to use cdo and eccodes.
+Under bin you have the get-seasonal.sh script for the seasonal forecast fetching and bias adjustment postprocessing. Similar scripts for ERA5, ERA5L and a bunch of other data sets have been added as well. Check out the scripts as their internal comments explain their purpose.
 
-This should used to put data in a ~/data/grib directory, where the smartmet-server will look for new grib files read in.
+These scripts are used to put data in a ~/data/grib directory, where the smartmet-server will look for new grib files to read in.
 
 # Docker setup 
 ## Build and run ssl-proxy
 
-For https addresses of the server, there is an ssl-proxy handling this
+For https connections of the server, there is an ssl-proxy image for handling this. The server name needs to be adapted in docker-compose.yaml file.
 
 `docker-compose up --detatch --build ssl-proxy`
 
 ## Build and run postgres-database
 
-Setup database for geonames-engine because of who knows why
+Setup the fminames database for geonames-engine so that the smartmet-server APIs can handle place and region names in addition to coordinates.
 
 `docker-compose up --detatch --build fminames-db`
 
 ## Build and run Redis
 
-Setup database for storing grib-file details
+Setup database for storing grib-file metadata
 
 `docker-compose up --detatch --build redis_db`
 
@@ -42,13 +43,14 @@ Setup database for storing grib-file details
 
 `docker-compose up --build smartmet-server`
 
-## Fire up all three services at once
+## Fire up all four services at once
 
 This will:
 
 * Start the Postgresql-database and create a db-directory to store all the data there.
 * Start Redis for storing information about available grib data
 * Start SmartMet Server after the Postgersql is ready
+* Start the ssl-proxy to enable encrypted http communication in addtion to http
 
 `docker-compose up --detatch`
 
@@ -56,8 +58,10 @@ This will:
 
 ## Read data to Redis to be used by SmartMet-server
 Then docker and its four instances (smartmet-server, fminames-db, redis and ssl-proxy), put grib files with data in the ../data directory.
-Filenames will have to match the pattern (dataproducer)_(YYYYMMDDTHHMM)_(description as you like).grib
+Filenames will have to match the pattern (dataproducer)_(YYYYMMDDTHHMMSS)_(description as you like).grib
 Dataproducer needs to be something defined in the ../config/engines/grid-engine/producers.csv. For mapping data into the server refer to [DATAMAPPING.md](DATAMAPPING.md)
+Mapping is in place for most of the data fetched by the scripts in bin. For data, that in the https://[yourserver]/grid-gui plugin shows up as GRIB-XXX (XXX referring to numbers), 
+the mapping is not yet in place, so follow the directions to complete the mapping.
 
 Run a `filesys-to-smartmet`-script in the smartmet-server container... once Redis is ready. The location of filesys-to-smartmet.cfg depends on where
 the settings-files are located at. With `docker-compose.yaml` the settings are currently stored in `/home/smartmet/config`.
